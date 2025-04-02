@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/tird4d/user-api/repositories"
 	"github.com/tird4d/user-api/services"
 )
 
@@ -29,7 +30,8 @@ func RegisterHandler(c *gin.Context) {
 	}
 
 	//Send input to service layer
-	err := services.RegisterUser(input.Name, input.Email, input.Password)
+	repo := &repositories.MongoUserRepository{}
+	err := services.RegisterUser(repo, input.Name, input.Email, input.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -50,7 +52,9 @@ func LoginHandler(c *gin.Context) {
 	}
 
 	//Send input to service layer
-	token, err := services.LoginUser(input.Email, input.Password)
+	repo := &repositories.MongoUserRepository{}
+	token, err := services.LoginUser(repo, input.Email, input.Password)
+
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "The user or password is invalid"})
 		return
@@ -62,4 +66,27 @@ func LoginHandler(c *gin.Context) {
 
 	}
 
+}
+
+func MeHandler(c *gin.Context) {
+	userIDRaw, exists := c.Get("user_id")
+	userID, ok := userIDRaw.(string)
+
+	if !exists || !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid user ID"})
+		c.Abort()
+		return
+	}
+
+	user, err := services.GetUser(userID)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "User not found"})
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"user":    user.Name,
+		"message": "this is user profile",
+	})
 }

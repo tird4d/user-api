@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/tird4d/user-api/models"
+	"github.com/tird4d/user-api/repositories"
 	"github.com/tird4d/user-api/utils"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func RegisterUser(name, email, password string) error {
+func RegisterUser(repo repositories.UserRepository, name, email, password string) error {
 
 	hashedPassword, err := utils.HashPassword(password)
 	if err != nil {
@@ -24,18 +25,14 @@ func RegisterUser(name, email, password string) error {
 		Password: hashedPassword,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-
-	_, err = models.UserCollection().InsertOne(ctx, user)
-
-	defer cancel()
+	_, err = repo.InsertNewUser(&user)
 
 	return err
 }
 
-func LoginUser(email, password string) (string, error) {
-	var user models.User
-	err := models.UserCollection().FindOne(context.Background(), bson.M{"email": email}).Decode(&user)
+func LoginUser(repo repositories.UserRepository, email, password string) (string, error) {
+	var user *models.User
+	user, err := repo.FindByEmail(email)
 	if err != nil {
 		fmt.Println(err)
 		return "", err
@@ -53,4 +50,23 @@ func LoginUser(email, password string) (string, error) {
 	}
 
 	return token, nil
+}
+
+func GetUser(user_id string) (models.User, error) {
+	var user models.User
+
+	oid, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return user, err
+	}
+
+	err = models.UserCollection().FindOne(context.Background(), bson.M{"_id": oid}).Decode(&user)
+
+	if err != nil {
+		fmt.Println(err)
+		return user, err
+	}
+
+	return user, err
+
 }

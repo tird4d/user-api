@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -15,7 +16,7 @@ func GenerateJWT(userId primitive.ObjectID) (string, error) {
 	secret := os.Getenv("JWT_SECRET")
 
 	if secret == "" {
-		secret = "default_secret" //only for development
+		return "", errors.New("JWT_SECRET is not set")
 	}
 
 	claims := jwt.MapClaims{
@@ -29,4 +30,30 @@ func GenerateJWT(userId primitive.ObjectID) (string, error) {
 	fmt.Println(token)
 	return tokenString, err
 
+}
+
+func ValidateJWT(tokenString string) (jwt.MapClaims, error) {
+
+	secret := os.Getenv("JWT_SECRET")
+
+	if secret == "" {
+		return nil, errors.New("JWT_SECRET is not set")
+	}
+
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unxpected signing method: %v", t.Header["alg"])
+		}
+		return []byte(secret), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, errors.New("invalid token")
 }

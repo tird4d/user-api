@@ -3,12 +3,15 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/tird4d/user-api/handlers"
+	"github.com/tird4d/user-api/middlewares"
 )
 
 func UserRoutes(r *gin.Engine) {
 	r.POST("/register", handlers.RegisterHandler)
-}
 
-func LoginRoutes(r *gin.Engine) {
 	r.POST("/login", handlers.LoginHandler)
+
+	auth := r.Group("/")
+	auth.Use(middlewares.JWTAuthMiddleware())
+	auth.GET("/me", handlers.MeHandler)
 }
