@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tird4d/user-api/repositories"
@@ -89,4 +91,23 @@ func MeHandler(c *gin.Context) {
 		"user":    user.Name,
 		"message": "this is user profile",
 	})
+}
+
+func GetAllUsersHandler(c *gin.Context) {
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	//Send input to service layer
+	repo := &repositories.MongoUserRepository{}
+	users, err := services.GetAllUsers(ctx, repo)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"users": users})
+
 }

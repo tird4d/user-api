@@ -22,6 +22,7 @@ func (m *MockUserRepository) FindByEmail(email string) (*models.User, error) {
 */
 
 import (
+	"context"
 	"github.com/stretchr/testify/mock"
 	"github.com/tird4d/user-api/models"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -46,4 +47,8 @@ func (m *UserRepositoryMock) InsertNewUser(user *models.User) (*mongo.InsertOneR
 		return result, args.Error(1)
 	}
 	return nil, args.Error(1)
+}
+
+func (m *UserRepositoryMock) GetAllUsers(ctx context.Context) ([]models.User, error) {
+	return nil, nil
 }

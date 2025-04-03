@@ -17,12 +17,13 @@ func init() {
 func TestGenerateJwt(t *testing.T) {
 
 	userId := "67e6c37b452365a9c0e36eae"
+	role := "user"
 	oid, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
 		t.Error("error", err.Error())
 	}
 
-	token, err := GenerateJWT(oid)
+	token, err := GenerateJWT(oid, role)
 	if err != nil {
 		t.Error("error", err.Error())
 	}

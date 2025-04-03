@@ -30,3 +30,29 @@ func (r *MongoUserRepository) InsertNewUser(user *models.User) (*mongo.InsertOne
 
 	return result, err
 }
+
+func (r *MongoUserRepository) GetAllUsers(ctx context.Context) ([]models.User, error) {
+
+	var users []models.User
+
+	cursor, err := models.UserCollection().Find(ctx, bson.M{})
+	if err != nil {
+		return users, err
+	}
+
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var user models.User
+		if err := cursor.Decode(&user); err != nil {
+			return nil, err
+		}
+
+		users = append(users, user)
+	}
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+	return users, nil
+
+}

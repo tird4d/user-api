@@ -23,6 +23,7 @@ func RegisterUser(repo repositories.UserRepository, name, email, password string
 		Name:     name,
 		Email:    email,
 		Password: hashedPassword,
+		Role:     "user",
 	}
 
 	_, err = repo.InsertNewUser(&user)
@@ -42,7 +43,7 @@ func LoginUser(repo repositories.UserRepository, email, password string) (string
 		return "", errors.New("invalid credentials")
 	}
 
-	token, err := utils.GenerateJWT(user.ID)
+	token, err := utils.GenerateJWT(user.ID, user.Role)
 	if err != nil {
 		fmt.Println("token generated error:", err.Error())
 
@@ -69,4 +70,8 @@ func GetUser(user_id string) (models.User, error) {
 
 	return user, err
 
+}
+
+func GetAllUsers(ctx context.Context, repo repositories.UserRepository) ([]models.User, error) {
+	return repo.GetAllUsers(ctx)
 }

@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func GenerateJWT(userId primitive.ObjectID) (string, error) {
+func GenerateJWT(userId primitive.ObjectID, role string) (string, error) {
 	_ = userId
 
 	secret := os.Getenv("JWT_SECRET")
@@ -21,6 +21,7 @@ func GenerateJWT(userId primitive.ObjectID) (string, error) {
 
 	claims := jwt.MapClaims{
 		"user_id": userId.Hex(),
+		"role":    role,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(),
 	}
 
@@ -42,7 +43,7 @@ func ValidateJWT(tokenString string) (jwt.MapClaims, error) {
 
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unxpected signing method: %v", t.Header["alg"])
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
 		return []byte(secret), nil
 	})
