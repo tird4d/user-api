@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/tird4d/user-api/repositories"
 	"github.com/tird4d/user-api/services"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type RegisterInput struct {
@@ -71,6 +72,10 @@ func LoginHandler(c *gin.Context) {
 }
 
 func MeHandler(c *gin.Context) {
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
 	userIDRaw, exists := c.Get("user_id")
 	userID, ok := userIDRaw.(string)
 
@@ -80,7 +85,9 @@ func MeHandler(c *gin.Context) {
 		return
 	}
 
-	user, err := services.GetUser(userID)
+	repo := &repositories.MongoUserRepository{}
+	user, err := services.GetUser(ctx, repo, userID)
+
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "User not found"})
 		c.Abort()
@@ -91,6 +98,52 @@ func MeHandler(c *gin.Context) {
 		"user":    user.Name,
 		"message": "this is user profile",
 	})
+}
+
+func UpdateMeHandler(c *gin.Context) {
+	//Creating a context
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	//checking user_id existence in request
+	userIDRaw, exists := c.Get("user_id")
+	userID, ok := userIDRaw.(string)
+
+	if !exists || !ok {
+		c.JSON(401, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	//creating an objectId
+	oid, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Cannot create object ID"})
+		return
+	}
+
+	// Bind and validate input
+
+	var body struct {
+		Name  string `json:"name" binding:"required"`
+		Email string `json:"email" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	//Calling the user service
+	repo := &repositories.MongoUserRepository{}
+	err = services.UpdateMe(ctx, repo, oid, body.Name, body.Email)
+
+	//Sending response
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Profile updated successfully"})
 }
 
 func GetAllUsersHandler(c *gin.Context) {

@@ -14,8 +14,10 @@ func UserRoutes(r *gin.Engine) {
 	auth := r.Group("/")
 	auth.Use(middlewares.JWTAuthMiddleware())
 	auth.GET("/me", handlers.MeHandler)
+	auth.PUT("/me", handlers.UpdateMeHandler)
 
 	admin := auth.Group("/admin")
 	admin.Use(middlewares.AuthorizeRole("admin"))
 	admin.GET("/users", handlers.GetAllUsersHandler)
+
 }

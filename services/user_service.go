@@ -53,15 +53,15 @@ func LoginUser(repo repositories.UserRepository, email, password string) (string
 	return token, nil
 }
 
-func GetUser(user_id string) (models.User, error) {
-	var user models.User
+func GetUser(ctx context.Context, repo repositories.UserRepository, user_id string) (*models.User, error) {
+	var user *models.User
 
 	oid, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
 		return user, err
 	}
 
-	err = models.UserCollection().FindOne(context.Background(), bson.M{"_id": oid}).Decode(&user)
+	user, err = repo.FindByID(ctx, oid)
 
 	if err != nil {
 		fmt.Println(err)
@@ -69,6 +69,24 @@ func GetUser(user_id string) (models.User, error) {
 	}
 
 	return user, err
+
+}
+
+func UpdateMe(ctx context.Context, repo repositories.UserRepository, oid primitive.ObjectID, name, email string) error {
+	update := bson.M{}
+
+	if name != "" {
+		update["name"] = name
+	}
+
+	if email != "" {
+		update["email"] = email
+	}
+
+	if len(update) == 0 {
+		return errors.New("noting to update")
+	}
+	return repo.UpdateUserByID(ctx, oid, update)
 
 }
 

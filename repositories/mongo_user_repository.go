@@ -6,10 +6,21 @@ import (
 
 	"github.com/tird4d/user-api/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type MongoUserRepository struct{}
+
+func (r *MongoUserRepository) FindByID(ctx context.Context, oid primitive.ObjectID) (*models.User, error) {
+	var user models.User
+	err := models.UserCollection().FindOne(ctx, bson.M{"_id": oid}).Decode(&user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
 
 func (r *MongoUserRepository) FindByEmail(email string) (*models.User, error) {
 	var user models.User
@@ -31,6 +42,13 @@ func (r *MongoUserRepository) InsertNewUser(user *models.User) (*mongo.InsertOne
 	return result, err
 }
 
+func (r *MongoUserRepository) UpdateUserByID(ctx context.Context, oid primitive.ObjectID, update bson.M) error {
+
+	filter := bson.M{"_id": oid}
+	_, err := models.UserCollection().UpdateOne(ctx, filter, bson.M{"$set": update})
+
+	return err
+}
 func (r *MongoUserRepository) GetAllUsers(ctx context.Context) ([]models.User, error) {
 
 	var users []models.User
